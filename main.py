@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 # define model hyperparmeters
 hyperparams = {'Epoch': 30,
-               'lr': 1e-5,
+               'lr': 1e-4,
                'betas': [0.9, 0.999],
                'batch_size': 8,
                'wd': 1e-5,
