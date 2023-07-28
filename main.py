@@ -141,9 +141,9 @@ if __name__ == '__main__':
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/FlowFlowNet.pth")
+    torch.save(model.state_dict(), "DeepPCO.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/FlowFlowNet_scripted.pt")
+    model_scripted.save("DeepPCO_scripted.pt")
     writer.close()
