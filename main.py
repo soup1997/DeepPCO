@@ -13,8 +13,8 @@ import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 80,
-               'lr': 1e-6,
+hyperparams = {'Epoch': 30,
+               'lr': 1e-5,
                'betas': [0.9, 0.999],
                'batch_size': 8,
                'wd': 1e-5,
