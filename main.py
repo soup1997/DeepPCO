@@ -135,7 +135,7 @@ if __name__ == '__main__':
         if epoch % hyperparams['step_size'] == 0:
             adjust_weight_decay(optimizer, epoch)
             lr_scheduler.step()
-            torch.save(model.state_dict(), f"/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Epoch:{epoch}, Loss: {test_loss}, Acc: {test_t_acc}{test_q_acc}_FlowFlowNet.pth")
+            torch.save(model.state_dict(), f"Epoch:{epoch}, Loss: {test_loss}, Acc: {test_t_acc}{test_q_acc}_DeepPCO.pth")
 
     # After training, save the model
     model.to('cpu')
