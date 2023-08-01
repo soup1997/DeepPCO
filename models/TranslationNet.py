@@ -16,12 +16,12 @@ class TNET(nn.Module):
             nn.LeakyReLU(0.1, inplace=True),
             nn.Conv2d(256, 512, 3, 2),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Conv2d(512, 128, 1, 1),
-            nn.LeakyReLU(0.2, inplace=True)
+            nn.Conv2d(512, 128, 1, 1)
         )
         
         # Fully Connected layers
         self.fc = nn.Sequential(
+            nn.LeakyReLU(0,2, inplace=True),
             nn.Linear(fc_size, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 128),
