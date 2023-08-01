@@ -93,16 +93,6 @@ def test_epoch(test_loader):
     return test_loss, translation_acc, orientation_acc
 
 
-def adjust_weight_decay(optimizer, epoch, init_weight_decay=hyperparams['wd'], decay_factor=hyperparams['gamma'], decay_epochs=hyperparams['step_size']):
-    if epoch > 0 and epoch % decay_epochs == 0:
-        for param_group in optimizer.param_groups:
-            param_group['weight_decay'] *= decay_factor
-    
-    else:
-        for param_group in optimizer.param_groups:
-            param_group['weight_decay'] = init_weight_decay
-
-
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -133,7 +123,6 @@ if __name__ == '__main__':
         writer.add_scalar("Orientation Acc/Test", test_q_acc, epoch)
 
         if epoch % hyperparams['step_size'] == 0:
-            adjust_weight_decay(optimizer, epoch)
             lr_scheduler.step()
             torch.save(model.state_dict(), f"Epoch:{epoch}, Loss: {test_loss}, Acc: {test_t_acc}{test_q_acc}_DeepPCO.pth")
 
