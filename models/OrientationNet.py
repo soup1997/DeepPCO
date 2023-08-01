@@ -12,6 +12,7 @@ class ONET(nn.Module):
 
         # Fully Connected layers
         self.fc = nn.Sequential(
+            nn.LeakyReLU(0,2, inplace=True),
             nn.Linear(fc_size, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 128),
