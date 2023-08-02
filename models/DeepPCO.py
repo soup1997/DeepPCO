@@ -18,8 +18,8 @@ class Criterion(nn.Module):
         return q
 
     def forward(self, pred, gt):
-        p_hat, p = pred[:3], gt[:3] # translation
-        q_hat, q = pred[3:], gt[3:] # orientation(euler)
+        p_hat, p = pred[:, :3], gt[:, :3] # translation
+        q_hat, q = pred[:, 3:], gt[:, 3:] # orientation(euler)
         
         if self.orientation == 'quaternion':
             q_hat = self._normalize_quaternion(q_hat)
