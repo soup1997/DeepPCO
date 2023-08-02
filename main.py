@@ -23,8 +23,8 @@ hyperparams = {'Epoch': 30,
 
 
 def calculate_rmse(predictions, targets):
-    t_mse = nn.MSELoss()(predictions[:3], targets[:3])
-    q_mse = nn.MSELoss()(predictions[3:], targets[3:])
+    t_mse = nn.MSELoss()(predictions[:, :3], targets[:, :3])
+    q_mse = nn.MSELoss()(predictions[:, 3:], targets[:, 3:])
     t_rmse, q_rmse = torch.sqrt(t_mse), torch.sqrt(q_mse)
     return t_rmse, q_rmse
 
