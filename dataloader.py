@@ -23,6 +23,12 @@ kitti_time = {0: [0, 4540],
               9: [0, 1590],
               10: [0, 1200]}
 
+class SubtractConstant:
+    def __init__(self, constant=0.5):
+        self.constant = constant
+
+    def __call__(self, img):
+        return (img - self.constant)
 
 class KittiDataset(Dataset):
     def __init__(self, root_dir, sequence, valid_time):
@@ -40,7 +46,8 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((64, 1024))])
+                                              transforms.Resize((64, 1024)),
+                                              SubtractConstant(constant=0.5])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
