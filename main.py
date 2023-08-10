@@ -108,7 +108,7 @@ if __name__ == '__main__':
     torchsummary.summary(model, input_size=(6, 64, 1024))
 
     for epoch in range(1, num_epochs + 1):
-        train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
+        train_loader, valid_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
         writer.add_scalar("Loss/Train", train_loss, epoch)
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
