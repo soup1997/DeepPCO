@@ -2,7 +2,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
@@ -13,7 +12,7 @@ import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 30,
+hyperparams = {'Epoch': 50,
                'lr': 1e-4,
                'betas': [0.9, 0.999],
                'batch_size': 8,
@@ -22,81 +21,80 @@ hyperparams = {'Epoch': 30,
                'gamma': 0.5}
 
 
-def calculate_rmse(predictions, targets):
-    t_mse = nn.MSELoss()(predictions[:, :3], targets[:, :3])
-    q_mse = nn.MSELoss()(predictions[:, 3:], targets[:, 3:])
-    t_rmse, q_rmse = torch.sqrt(t_mse), torch.sqrt(q_mse)
-    return t_rmse, q_rmse
+def calculate_rmse(pred, gt):
+    t_mse = nn.MSELoss()(pred[:, :3], gt[:, :3])
+    r_mse = nn.MSELoss()(pred[:, 3:], gt[:, 3:])
+    t_rmse, r_rmse = torch.sqrt(t_mse), torch.sqrt(r_mse)
 
+    return t_rmse, r_rmse
+
+def valid_one_epoch(valid_loader):
+    model.eval()
+    valid_loss = 0.0
+    position_error = 0.0
+    rotation_error = 0.0
+
+    progress_bar = tqdm(valid_loader, total=len(valid_loader), desc=f'Epoch {epoch}/{num_epochs}, Valid Loss: 0.0000')
+    
+    with torch.no_grad():
+        for batch_idx, (img, gt) in enumerate(progress_bar):
+            img, gt = img.to(device), gt.to(device)
+            output = model(img)
+            loss = criterion(output, gt)
+            valid_r_error, valid_p_error = calculate_rmse(output, gt)
+
+            valid_loss += loss.item()
+            rotation_error += valid_r_error.item()
+            position_error += valid_p_error.item()
+
+            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Valid Loss: {valid_loss / (batch_idx + 1):.4f}, Valid position error: {valid_p_error / (batch_idx + 1):.4f}, Valid rotation error: {valid_r_error / (batch_idx + 1):.4f}')
+
+    valid_loss /= len(valid_loader)
+    position_error /= len(valid_loader)
+    rotation_error /= len(valid_loader)
+    progress_bar.close()
+
+    return valid_loss, position_error, rotation_error
 
 def train_one_epoch(epoch, train_loader):
     train_loss = 0.0
-    translation_acc = 0.0
-    orientation_acc = 0.0
+    position_error = 0.0
+    rotation_error = 0.0
 
     model.train()
-    progress_bar = tqdm(train_loader, total=len(train_loader),
-                        desc=f'Epoch {epoch}/{num_epochs}, Train Loss: 0.0000')
+    progress_bar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch}/{num_epochs}, Train Loss: 0.0000')
 
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
-        output = model(img)  # output is (x, y, z, roll, pitch, yaw)
+        output = model(img)  # output is (roll, pitch, yaw, x, y, z)
         loss = criterion(output, gt)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # print(f"output: {output[0]}\ngt: {gt[0]}")
-
-        train_t_acc, train_q_acc = calculate_rmse(output, gt)
+        train_r_error, train_p_error = calculate_rmse(output, gt)
 
         train_loss += loss.item()
-        translation_acc += train_t_acc.item()
-        orientation_acc += train_q_acc.item()
+        rotation_error += train_r_error.item()
+        position_error += train_p_error.item()
 
-        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
-    
-    print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
+        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train position error: {train_p_error / (batch_idx + 1):.4f}, Train rotation error: {train_r_error / (batch_idx + 1):.4f}')
 
     train_loss /= len(train_loader)
-    translation_acc /= len(train_loader)
-    orientation_acc /= len(train_loader)
-
+    position_error /= len(train_loader)
+    rotation_error /= len(train_loader)
     progress_bar.close()
-    return train_loss, translation_acc, orientation_acc
 
-
-def test_epoch(test_loader):
-    model.eval()
-    test_loss = 0.0
-    translation_acc = 0.0
-    orientation_acc = 0.0
-
-    with torch.no_grad():
-        for batch_idx, (img, gt) in enumerate(test_loader):
-            img, gt = img.to(device), gt.to(device)
-            output = model(img)
-            loss = criterion(output, gt)
-            test_t_acc, test_q_acc = calculate_rmse(output, gt)
-
-            test_loss += loss.item()
-            translation_acc += test_t_acc.item()
-            orientation_acc += test_q_acc.item()
-
-    print(f"Epoch: {epoch}, Test Loss: {test_loss/ len(test_loader):.4f}, Test translation acc: {test_t_acc:.4f}, Test orientaion acc: {test_q_acc:.4f}\n")
-
-    test_loss /= len(test_loader)
-    translation_acc /= len(test_loader)
-    orientation_acc /= len(test_loader)
-
-    return test_loss, translation_acc, orientation_acc
-
+    return train_loss, position_error, rotation_error
 
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
+    flownt_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/flownets_EPE1.951.pth'
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = DeepPCO().to(device)
+    model.load_Flownet(flownet_dir)
     criterion = Criterion(orientation='euler', k=100.0).to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
@@ -111,13 +109,12 @@ if __name__ == '__main__':
 
     for epoch in range(1, num_epochs + 1):
         train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
-        train_loss, train_t_acc, train_q_acc = train_one_epoch(
-            epoch, train_loader)
+        train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
         writer.add_scalar("Loss/Train", train_loss, epoch)
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
-        test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
+        valid_loss, valid_t_acc, valid_q_acc = valid_one_epoch(valid_loader)
         writer.add_scalar("Loss/Test", test_loss, epoch)
         writer.add_scalar("Translation Acc/Test", test_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Test", test_q_acc, epoch)
