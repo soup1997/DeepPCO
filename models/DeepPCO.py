@@ -40,6 +40,18 @@ class DeepPCO(nn.Module):
 
         self.onet = ONET(fc_size=8192)
         self.tnet = TNET(fc_size=24192)
+
+    def load_Flownet(self, flownet_dir):
+        pretrained_w = torch.load(flownet_dir, map_location='cpu')
+
+        # Load FlowNet weights pretrained with FlyingChairs
+        # NOTE: the pretrained model assumes image rgb values in range [-0.5, 0.5]
+
+        # Use only conv-layer of FlowNet as CNN for DeepVO
+        model_dict = self.state_dict()
+        update_dict = {k: v for k, v in pretrained_w['state_dict'].items() if k in model_dict}
+        model_dict.update(update_dict)
+        self.load_state_dict(model_dict)
     
     def forward(self, x):
         translation = self.tnet(x)
